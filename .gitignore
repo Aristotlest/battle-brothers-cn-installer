@@ -1,0 +1,15 @@
+__pycache__/
+*.py[cod]
+.venv/
+build/
+dist/
+*.spec
+*.zip
+*.exe
+*.dll
+*.dat
+*.sav
+*.log
+prepared-*/
+.bb-cn-installer/
+cache/
