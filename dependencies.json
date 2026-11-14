@@ -1,0 +1,19 @@
+{
+  "game_version": "1.5.2.3",
+  "launcher": {
+    "version": "Steam v1.2.2",
+    "url": "https://www.nexusmods.com/battlebrothers/mods/719?tab=files",
+    "sha256": "1baeaf19f488670559a18871e547bba1483434589130f820ad8be9ccc507baa5"
+  },
+  "translator": {
+    "version": "v2.0.0",
+    "url": "https://github.com/shabbywu/bb-translator/releases/download/v2.0.0/bb-translator-windows.zip",
+    "fallback_url": "https://api.github.com/repos/shabbywu/bb-translator/releases/assets/472003106",
+    "sha256": "170c8e952999430042dbd074f02a947168f4ff9d2fe45852d5f799bb8da06ba0"
+  },
+  "texts": {
+    "commit": "b72af34749a31aee59139ba4e2455f65f924a5a7",
+    "url": "https://api.github.com/repos/shabbywu/Battle-Brothers-CN/zipball/b72af34749a31aee59139ba4e2455f65f924a5a7",
+    "sha256": "3f1ebf4816f6b8d2a5980d58f7f783e6c9a1b2c8a79dbbbcfb7ea97d875a2f8d"
+  }
+}
