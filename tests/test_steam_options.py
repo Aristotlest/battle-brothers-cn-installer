@@ -266,6 +266,8 @@ class AdditionalSteamTests(unittest.TestCase):
         from steam_ui import AutoSteamUI
         from installer_core import SafetyError
         class NoFallback:
+            def read(self):
+                return 'original'
             def exchange(self, expected, value):
                 raise SafetyError('Steam 设置后读回不匹配')
         class Fallback:
@@ -274,6 +276,32 @@ class AdditionalSteamTests(unittest.TestCase):
         ui = AutoSteamUI(primary=NoFallback(), fallback=Fallback())
         with self.assertRaisesRegex(SafetyError, '读回不匹配'):
             ui.exchange('', 'value')
+
+    def test_exchange_falls_back_only_after_primary_read_fails_before_any_write(self):
+        from steam_ui import AutoSteamUI, SteamUIUnavailable
+        class Primary:
+            def read(self):
+                raise SteamUIUnavailable('网页控件无障碍树不可用')
+            def exchange(self, expected, value):
+                raise AssertionError('primary exchange must not run')
+        class Fallback:
+            def exchange(self, expected, value):
+                return value
+        self.assertEqual(AutoSteamUI(primary=Primary(), fallback=Fallback()).exchange('', 'value'), 'value')
+
+    def test_primary_exchange_failure_never_falls_back_after_primary_preflight_read(self):
+        from steam_ui import AutoSteamUI
+        from installer_core import SafetyError
+        class Primary:
+            def read(self):
+                return 'original'
+            def exchange(self, expected, value):
+                raise SafetyError('自动粘贴后读回不匹配')
+        class Fallback:
+            def exchange(self, expected, value):
+                raise AssertionError('unsafe fallback after primary exchange')
+        with self.assertRaisesRegex(SafetyError, '读回不匹配'):
+            AutoSteamUI(primary=Primary(), fallback=Fallback()).exchange('original', 'value')
 
 
 if __name__ == '__main__':

@@ -201,20 +201,14 @@ def is_target_window(title, class_name, width, height):
 
 
 def field_point(width, height):
-    """DPI-independent point in the verified General launch-options editor."""
+    """Legacy observed geometry, NOT independent field identity; unused."""
     # The field is the wide right-hand pane: about 62% from the popup's
     # left edge and 76% down in the observed 1263x903 client rectangle.
     return (round(width * 0.62), round(height * 0.76))
 
 
 class Win32SteamUI:
-    """Conservative fallback for Steam CEF: verified popup + clipboard readback.
-
-    CEF does not expose its DOM to UIA. The fallback therefore uses only the
-    exact observed popup identity and a relative point in the General page,
-    then verifies the actual field through clipboard copy before every write
-    and after reopening the popup. It never touches localconfig.vdf.
-    """
+    """Disabled legacy geometry backend; public read/exchange refuse access."""
     WM_CLOSE = 0x0010
     VK_CONTROL = 0x11
     VK_A = 0x41
@@ -382,35 +376,14 @@ class Win32SteamUI:
         return value
 
     def read(self):
-        target = self._target(True)
-        return self._read_field(target)
+        raise SteamUIUnavailable('坐标回退已禁用：无法独立确认启动选项输入框身份；未读取或写入。' + MANUAL)
 
     def exchange(self, expected, value):
-        if not valid_text(expected) or not valid_text(value):
-            raise SafetyError('Steam 启动选项值无效；拒绝修改。' + MANUAL)
-        target = self._target(True)
-        current = self._read_field(target)
-        if current != expected:
-            raise SafetyError('Steam 启动选项已变化，拒绝粘贴。' + MANUAL)
-        hwnd, left, top, width, height = target
-        x, y = field_point(width, height)
-        def paste_and_verify():
-            self.user32.SetCursorPos(left + x, top + y)
-            self._key(self.VK_V)
-            self.sleeper(0.3)
-            if self._read_field(target) != value:
-                raise SafetyError('自动粘贴后读回不匹配，未确认保存。' + MANUAL)
-            self.user32.PostMessageW(hwnd, self.WM_CLOSE, 0, 0)
-            self.sleeper(0.5)
-            reopened = self._target(True)
-            if self._read_field(reopened) != value:
-                raise SafetyError('重新打开属性页后启动项不匹配。' + MANUAL)
-            return value
-        return self._exchange_clipboard_safely(value, paste_and_verify)
+        raise SteamUIUnavailable('坐标回退已禁用：无法独立确认启动选项输入框身份；未读取或写入。' + MANUAL)
 
 
 class AutoSteamUI:
-    """Use semantic UIA first, then the verified CEF popup fallback."""
+    """Semantic UIA only; the legacy coordinate backend refuses all access."""
     def __init__(self, primary=None, fallback=None):
         self.primary = primary or WindowsSteamUI()
         self.fallback = fallback or Win32SteamUI()
@@ -422,10 +395,14 @@ class AutoSteamUI:
             return self.fallback.read()
 
     def exchange(self, expected, value):
+        # The fallback is permitted only when the primary route fails its
+        # read-only preflight. Once primary.exchange starts, never retry via a
+        # second backend: it may already have changed Steam or be in rollback.
         try:
-            return self.primary.exchange(expected, value)
+            self.primary.read()
         except SteamUIUnavailable:
             return self.fallback.exchange(expected, value)
+        return self.primary.exchange(expected, value)
 
 
 class WindowsSteamUI:
@@ -449,7 +426,7 @@ class WindowsSteamUI:
                 raise ValueError('Invalid helper response object')
             if result.returncode or set(response) != {'value'} or not valid_text(response['value']):
                 message = response.get('error', 'Invalid helper response')
-                if any(marker in message for marker in (
+                if payload.get('action') == 'read' and any(marker in message for marker in (
                         '网页控件无障碍树', 'Unable to locate verified',
                         '未打开属性窗口', '未能准确导航')):
                     raise SteamUIUnavailable(message)
