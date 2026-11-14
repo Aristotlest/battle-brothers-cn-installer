@@ -1,0 +1,2 @@
+# Build-only. Runtime uses the Python standard library, including tkinter.
+PyInstaller==6.22.3
