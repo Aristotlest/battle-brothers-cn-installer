@@ -107,7 +107,7 @@ try {
             } catch { continue }
         }
         if (-not $accessible) {
-            throw 'Steam 当前版本未提供网页控件无障碍树，无法准确导航到启动选项；未打开属性窗口、未写入。请手动打开 战场兄弟 → 通用 → 启动选项'
+            throw 'Steam 当前版本未提供网页控件无障碍树，无法准确导航到启动选项；未打开属性窗口、未写入。请手动打开 战场兄弟 > 通用 > 启动选项'
         }
         Start-Process 'steam://gameproperties/365360'
         $sawSteamWindow = $false
@@ -128,7 +128,7 @@ try {
             if ($null -ne $found) { return ,$found }
         }
         if ($sawSteamWindow -and -not $sawAccessibleSteamTree) {
-            throw 'Steam 当前版本未提供网页控件无障碍树，无法准确定位启动选项输入框；未写入。请手动打开 战场兄弟 → 通用 → 启动选项'
+            throw 'Steam 当前版本未提供网页控件无障碍树，无法准确定位启动选项输入框；未写入。请手动打开 战场兄弟 > 通用 > 启动选项'
         }
         throw 'Unable to locate verified AppID 365360 properties, General tab and labeled launch-options input; no write attempted'
     }
@@ -275,7 +275,7 @@ class Win32SteamUI:
                 found = self._windows()
                 if found: break
         if len(found) != 1:
-            raise SteamUIUnavailable('未能唯一确认“战场兄弟 Battle Brothers”属性窗口，未写入。' + MANUAL)
+            raise SteamUIUnavailable('未能唯一确认"战场兄弟 Battle Brothers"属性窗口，未写入。' + MANUAL)
         hwnd, left, top, width, height = found[0]
         return hwnd, left, top, width, height
 

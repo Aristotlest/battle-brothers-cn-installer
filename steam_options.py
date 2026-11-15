@@ -4,7 +4,7 @@ import json
 from installer_core import SafetyError, atomic_json, launch_option
 
 
-MANUAL = ('自动操作未完成。请保持 Steam 运行，手动打开 战场兄弟 → 属性 → 常规 → 启动选项。'
+MANUAL = ('自动操作未完成。请保持 Steam 运行，手动打开 战场兄弟 > 属性 > 常规 > 启动选项。'
           '设置前自行保存原值；卸载时恢复原值（原值为空则清空），不要盲目拼接或清空其他选项。')
 FIELDS = {'schema', 'appid', 'game', 'original', 'original_sha256', 'applied', 'applied_sha256', 'phase'}
 

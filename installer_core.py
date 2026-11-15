@@ -15,6 +15,17 @@ from functools import wraps
 
 PINS = json.loads(Path(__file__).with_name('dependencies.json').read_text(encoding='utf-8'))
 TARGETS = ('data/zdata_cn.zip', 'win32/bb-launcher-steam.exe')
+BUNDLED_TEXTS = Path(__file__).with_name('resources') / 'translation-source.zip'
+
+
+def translation_archive(cache):
+    """Prefer exact unmodified embedded GPL source; corruption never falls back."""
+    if BUNDLED_TEXTS.exists():
+        no_links(BUNDLED_TEXTS)
+        if sha256(BUNDLED_TEXTS) != PINS['texts']['sha256']:
+            raise SafetyError('内置汉化文本校验失败；请重新获取安装器')
+        return BUNDLED_TEXTS
+    return fetch_pinned(PINS['texts'], Path(cache) / 'translation-source.zip')
 
 class SafetyError(RuntimeError):
     """Refused an operation rather than risk game or user data."""
@@ -212,6 +223,7 @@ def fetch_pinned(pin, target):
     raise SafetyError('官方依赖下载失败；可将已校验官方 ZIP 放入缓存。' + '; '.join(errors))
 
 def prepare(engine, launcher, cache, runner=subprocess.run):
+    launch_option(engine.game)  # Reject unrepresentable commands before any cache writes.
     engine.validate()
     if sha256(launcher) != PINS['launcher']['sha256']: raise SafetyError('启动器 SHA256 不匹配')
     cache = Path(cache).absolute()
@@ -221,7 +233,7 @@ def prepare(engine, launcher, cache, runner=subprocess.run):
     else: raise SafetyError('缓存必须位于游戏目录之外')
     cache.mkdir(parents=True, exist_ok=True)
     translator = fetch_pinned(PINS['translator'], cache / 'bb-translator-windows.zip')
-    texts = fetch_pinned(PINS['texts'], cache / 'translation-source.zip')
+    texts = translation_archive(cache)
     # Keep the prefix through copying, native execution, logs and output too.
     work = filesystem_path(cache / ('prepared-' + uuid.uuid4().hex))
     work.mkdir()
@@ -330,9 +342,13 @@ def game_lock(game):
 
 _ACTIVE_LOCKS = set()
 
-def locked(method):
+def locked(method=None, *, require_launch_option=False):
+    if method is None:
+        return lambda method: locked(method, require_launch_option=require_launch_option)
     @wraps(method)
     def call(self, *args, **kwargs):
+        if require_launch_option:
+            launch_option(self.game)  # Preflight before acquiring the operation lock.
         with game_lock(self.game): return method(self, *args, **kwargs)
     return call
 
@@ -374,7 +390,7 @@ class Engine:
         if app.get('appid') != '365360' or app.get('installdir') != self.game.name:
             raise SafetyError('Steam 清单与所选游戏不匹配')
 
-    @locked
+    @locked(require_launch_option=True)
     def install(self, prepared, launcher, replace=False, accept_warnings=False):
         self.validate()
         for source in (prepared.path, launcher):

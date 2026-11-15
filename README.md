@@ -1,121 +1,137 @@
 # 战场兄弟 Steam 中文安装器
 
-## 当前发布版本与支持范围
+**v0.2.0-beta.1 · Windows x64 · 预发布，非稳定版。**
 
-- 安装器发布版本：`v0.1.1`（Windows x64 onedir，GUI 与 CLI）。
-- 支持游戏：Steam PC《Battle Brothers / 战场兄弟》，AppID `365360`。
-- 支持游戏版本：`1.5.2.3`。安装动作会校验此版本；`1.5.2.4` 及其他版本不承诺安装兼容性。
-- 汉化文本补丁：`Battle-Brothers-CN` 固定提交 `b72af34749a31aee59139ba4e2455f65f924a5a7`；该上游没有采用语义版本号，不能把此提交称为其他版本。
-- 文本转换器：`bb-translator v2.0.0`（Windows）。
-- Steam 启动器：作者 `awesome-battle-brothers` Steam `v1.2.2`；必须由用户从作者页面下载并导入，安装器不随包分发。
-- 不支持：GOG 版本、非 Steam 版本、未列出的游戏版本，以及把其他汉化文本源混用到本安装器的准备流程。
+非官方 Steam《Battle Brothers / 战场兄弟》中文安装器。公开使用入口只有一个 GUI 文件 `BB-CN-Installer.exe`：无需安装 Python，无需解压安装器目录。单文件运行时会临时展开运行库；不等于完全离线安装。
 
-发布包不包含游戏原始文件、存档、`zdata_cn.zip`、上游翻译源码归档、转换器二进制或作者启动器；只包含安装器本身及其运行库许可文件。
+项目：<https://github.com/Aristotlest/battle-brothers-cn-installer> · [预发布说明及验证边界](RELEASE-NOTES-v0.2.0-beta.1.md)
 
-项目：<https://github.com/Aristotlest/battle-brothers-cn-installer>
+## 怎么用
 
-**Windows / Steam AppID 365360 / 游戏 FileVersion 1.5.2.3 专用。** Python 标准库核心、中文 tkinter GUI 与 CLI。非官方项目，与 Overhype Studios、Steam、汉化作者无隶属关系。
+1. 从本项目 Releases 下载 `BB-CN-Installer.exe`，双击运行。不用安装 Python。
+2. 先退出游戏。只支持 Windows Steam 版 `1.5.2.3`，建议先备份存档。
+3. 缺少启动器时，点“作者下载页”，下载 **Steam v1.2.2**，解压。回到安装器，选择里面的 `bb-launcher-steam.exe`，点“重新检测”。不要选 GOG 版。
+4. 确认游戏目录正确，点“一键安装”。首次需要联网下载转换器；阅读警告后，自行决定是否继续。
+5. 安装完成后看“Steam 启动项”的结果。默认不会自动修改 Steam：点“复制启动命令”，先保存 Steam 里原来的启动项，再到 Steam 库中右键游戏 > 属性 > 通用 > 启动选项，替换为复制的命令。
+6. 从 Steam 库中启动原来的 Battle Brothers，不要添加非 Steam 游戏。
 
-## 自动设置 Steam 启动选项（可安全还原）
+想自动设置启动项：先关闭所有游戏、保持 Steam 登录，再勾选“允许临时重启 Steam”后安装。这会临时重启 Steam；失败时按上面第 5 步手动设置，不要把“文件安装成功”当成“Steam 设置成功”。
 
-仍需用户下载作者启动器并确认写入：
+卸载：退出游戏，打开安装器，确认目录后点“卸载还原”。手动设置过启动项的，需要自己恢复此前保存的原值；自动设置过的按界面提示授权恢复。不要提前删除游戏里的 `.bb-cn-installer` 备份目录。
 
-1. 从[作者 Nexus 页面](https://www.nexusmods.com/battlebrothers/mods/719?tab=files)下载 **Steam v1.2.2**，解压后选择 `bb-launcher-steam.exe`。不是 GOG 启动器。不绕过 Nexus 登录，不再分发作者启动器。
-2. 安装完成后可点击“自动设置 Steam 启动选项”并确认。只有 Steam 提供可验证的 UI Automation 语义树时才允许自动操作：安装器打开固定 AppID 365360 的属性页，重新捕获控件，按语义验证属性页、常规标签和有标签的启动选项输入框；先持久备份原值，再精确替换并关闭 / 重开属性页读回确认。不会拼接旧参数。已有原值会完整保留，重复设置不会覆盖首次备份。
+遇到问题：打开“高级选项 / 日志”查看原因。提示目录或启动器未通过就重新选择；下载失败就检查网络；提示中断事务就先点“恢复中断事务”。不要反复强行覆盖，分享日志前检查是否含个人路径或参数。
 
-  自动化不是所有 Steam 客户端版本的保证。**必须保持 Steam 正在运行、已登录同一账户，操作期间不要编辑属性或切换账户。** 当前 Steam CEF 不提供可验证的网页 UIA 语义树时，程序会拒绝自动操作并提示手动路径；不会使用相对坐标、窗口标题或剪贴板回读来猜测输入框。属性窗口不唯一、输入框没有语义身份、回读不匹配或重新打开失败时都拒绝写入并提示“未能自动定位，未写入”。不直接编辑 `localconfig.vdf`，不把打开 URI 本身当成成功。
+注意：不是完全离线包。已知转换警告可能影响被击杀历史显示；第三方 MOD 兼容性和实际成就解锁不作保证。下面是组件来源和详细说明，普通用户无需看开发命令。
 
-自动设置失败时 GUI 可另行确认“仅复制目标命令”，供手动打开游戏属性 → 常规 → 启动选项后粘贴；该操作不会被标记为自动设置成功。手动设置前必须自行保存原值，不要盲目拼接。若已生成自动备份，请同时核对 `.bb-cn-installer/launch-options.json` 的 `original`（原值）和 `applied`（目标值）。备份包含本机路径及可能敏感的既有启动参数，不要公开上传。
+## 支持范围与组件来源
 
-安装器不会直接改 `localconfig.vdf`，不会关闭 Steam，不会添加非 Steam 快捷方式。使用模式为：
+| 组件 | 固定版本 / 来源 | 获取方式 |
+| --- | --- | --- |
+| 游戏 | Steam AppID `365360`，Windows FileVersion `1.5.2.3` | 用户合法持有的本机游戏 |
+| 汉化文本 | shabbywu/Battle-Brothers-CN，提交 `b72af34749a31aee59139ba4e2455f65f924a5a7` | EXE 内置未修改的完整源 ZIP、GPLv3 全文和归属说明 |
+| 转换器 | shabbywu/bb-translator `v2.0.0` | 首次从官方固定地址下载，SHA256 校验后缓存；不内置 |
+| 中文渲染启动器 | awesome-battle-brothers **Steam v1.2.2** | 首次从作者页面下载、解压并导入 `bb-launcher-steam.exe`，必须匹配固定 SHA256；不内置 |
+
+转换器版本不是汉化文本版本。固定 URL、版本和 SHA256 见 [`dependencies.json`](dependencies.json)。不支持 GOG、非 Steam 版本；不承诺游戏 `1.5.2.4`、其他版本或混用其他文本源。安装有版本门禁；卸载 / 恢复允许在游戏更新后继续进行，但仍须通过状态、路径和哈希验证。
+
+**不是完全离线包。** 内置文本不意味着内置转换器或启动器，也不代表已完成许可证完整的自建转换器。下载或校验失败会停止，不静默跳过固定值检查。
+
+## 使用前必读
+
+- **已知 `player / onDeath` 兼容处理失败仍存在。** 真实转换输出包含“兼容处理失败, 将无法正常展示被击杀的历史”，可能影响被击杀历史显示。转换器返回 0 不代表零警告或功能完整；必须阅读并明确接受警告才安装。
+- **第三方 MOD 兼容性未验证。** 仅从原版 `data/*.dat` 生成，不合并 `data/*.zip` 中的 MOD。
+- **不保证 Steam 成就解锁。** 保留原版程序和 Steam API、从 Steam 原游戏入口运行是集成边界，不是实际成就触发证明。不要使用成就解锁器验证。
+- 当前 EXE 已在完整游戏副本验证中文菜单、大地图、任务及旧存档 `0811` 加载，退出后原存档未变。旧存档已生成的英文人物、公司、城镇名不保证追溯翻译。Steam 原入口与本次生成包的同次运行未完成验证，见下方边界。
+
+## GUI 安装
+
+1. 退出游戏，双击 `BB-CN-Installer.exe`。启动时只读发现 Steam 库和受支持游戏，检查现有安装位置及下载目录中的指定启动器文件。只有唯一且校验通过的游戏才自动选中；未找到或存在多个目录时，点击“更改…”选择，不猜测写入目标。
+2. 缺少启动器时，点击“作者下载页”，从[作者 Nexus Files 页面](https://www.nexusmods.com/battlebrothers/mods/719?tab=files)取得 **Steam v1.2.2**，解压后选择 `bb-launcher-steam.exe`，再“重新检测”。不是 GOG 版本。需要登录时请在作者网站自行完成；安装器不绕过登录、不收集凭据。
+3. 核对游戏目录、启动器和校验状态。**“允许临时重启 Steam…”默认关闭**；保持关闭时，一键安装不会修改 Steam，完成后须手动粘贴启动项。
+4. 点击“一键安装”，确认目标写入。程序下载并校验转换器，复制原版 `.dat` 到游戏之外的隔离缓存，在本机生成汉化包。准备阶段不写入游戏目标文件。
+5. 阅读转换警告：默认保守摘要，可切换到完整原始输出并查看日志路径，窗口可滚动。接受才继续；取消 / Escape / 关闭窗口均不接受警告。摘要不会把已知兼容失败隐藏为普通进度。
+6. 分别查看“游戏文件”和“Steam 启动项”结果。文件校验通过不等于 Steam 已设置；Steam 可选步骤失败时，汉化文件可能已安装，须按提示核对，不能视为整项成功。
+7. 默认流程下点击“复制启动命令”，先保存 Steam 当前启动项，再到原游戏 → 属性 → 常规 → 启动选项核对并手动替换。**复制成功不代表设置成功。** 编辑路径会使旧校验结果和复制资格失效。
+
+启动命令形如（由安装器生成实际绝对路径）：
 
 ```text
 "游戏绝对路径\win32\bb-launcher-steam.exe" %command%
 ```
 
-从 Steam 原游戏入口运行，并保持 Steam 正在运行。此方案旨在保留 Steam 集成，**不保证实际成就解锁**；只有真实游玩才能验证。游戏可能正常提示 Mod warning。旧存档已生成的英文人物、公司、城镇名不保证追溯翻译。
+不要盲目拼接旧参数，不要添加非 Steam 快捷方式；保持 Steam 正在运行，从原游戏 AppID `365360` 入口启动。游戏可能显示 Mod warning；该提示本身不能证明成就是否可用。
 
-## GUI 使用
+“高级选项 / 日志”保留手动路径、缓存、分步准备 / 安装、检查 / 诊断、恢复中断事务和 Steam 设置 / 恢复。已有未知同名文件默认拒绝覆盖；只有明确勾选“备份并替换”才允许继续。
 
-双击打包后的 `BB-CN-Installer.exe`，或在已带 tkinter 的 Python 3.12+ 上运行：
+## 可选：授权临时重启 Steam 后自动设置
 
-```console
-python bb_cn_installer.py
-```
+此步骤独立于文件安装，**默认不授权**。勾选后仍需确认；请先退出全部游戏，保持同一账户登录，操作期间不要编辑启动项或切换账户。
 
-1. 退出游戏。点击“发现 Steam 游戏”，或选择包含 `data` / `win32` 的游戏根目录。
-2. 选择上述官方启动器 EXE。SHA256 必须匹配，不能自动跳过校验。
-3. 点击“准备汉化”。下载校验官方转换器和固定提交的翻译文本，仅复制本机原版 `data/*.dat` 到游戏目录之外的隔离缓存，然后生成本机汉化包。准备阶段不写入游戏。
-4. 阅读日志与警告，再点击“安装”。**已知转换器可能返回 0 但报告 `modify failed … player … onDeath`**。程序会显著提示；必须明确接受警告才允许安装。不能将此表述为完全验证或全部文本正确。
-5. 如游戏已有同名未知汉化文件，默认拒绝覆盖。只有明确勾选“备份并替换”才能继续。
-6. 点击“自动设置 Steam 启动选项”，确认设置并查看读回结果；自动定位失败时使用明确提示的手动方案，然后由 Steam 启动游戏。
+授权路线正常退出 Steam，临时启用仅本机调试，通过 CDP 连接到已验证归属的 Steam 上下文，仅针对 AppID `365360` 使用原生 `SteamClient.Apps` 接口：先持久备份原值，写入前比较当前精确值，再设置并通过新订阅读回；结束后恢复普通启动。**从不直接编辑 `localconfig.vdf` 或其他 Steam VDF 配置，不用坐标猜测输入框。** 原生 API 读回不是属性页关闭 / 重开的验证。
 
-可保存界面日志。转换器完整 stdout / stderr 保存在 `prepared-*/translator.log`。日志含本机路径，公开前请自行脱敏。
+兼容性证据仅限本机含 **Millennium** 的 Steam；内部接口并非稳定公开 API，不保证其他客户端、无 Millennium 环境或未来版本兼容，也不要求用户为此安装 Millennium。未授权重启时，高级选项中的语义 UI 路线也只会在能验证控件身份时操作；不支持的 CEF 语义树会被拒绝，不能当作通用自动填写保证。
 
-默认持久缓存为 `%LOCALAPPDATA%\BB-CN-Installer`，首次使用须联网并预留足够空间（含完整原版 .dat 副本）。隔离准备目录含用户游戏脚本，**不能上传、加入仓库或再分发**。可在不再需要时自行删除缓存；卸载备份则保存在游戏的 `.bb-cn-installer` 中，不能提前删除。
+### 精确备份与恢复
 
-## 安全边界与卸载
+自动设置前在游戏 `.bb-cn-installer/launch-options.json` 持久保存原字符串 `original`、目标字符串 `applied`、各自 UTF-8 SHA256、固定 AppID、游戏路径及阶段。重复设置不覆盖活动记录的首次原值；不会将旧参数拼接到目标命令。
 
-只安装两个游戏文件：
+恢复仅在当前值**精确等于 `applied`** 时写回 `original`；原值为空则清空。当前值已是原值时只确认恢复。检测到用户 / 第三方改动、记录不可信或无法确认读回时拒绝覆盖，保留备份。不要删除记录来绕过检查，也不要公开上传它：其中可能包含本机路径和敏感的旧参数。
+
+## 文件安全、卸载与中断恢复
+
+仅安装两个游戏文件：
 
 - `data/zdata_cn.zip`
 - `win32/bb-launcher-steam.exe`
 
-另在 `.bb-cn-installer` 中保存固定路径状态、SHA256、原文件备份、暂存文件与事务日志。不会修改 `BattleBrothers.exe`、`steam_api.dll` 或任何存档，不会删除整个 `awesome-battle-brothers` 目录。版本或 Steam 清单不匹配、游戏 / 启动器仍运行、下载 / 文件校验失败时拒绝修改；不会杀进程。
+在游戏 `.bb-cn-installer` 保存原文件备份、SHA256、状态、暂存和写前事务日志。不会修改 `BattleBrothers.exe`、`steam_api.dll` 或存档，也不会删除整个 `awesome-battle-brothers` 目录。不可信链接 / 路径、运行中的游戏 / 启动器、版本或清单不符、文件校验失败时拒绝相关修改，不强杀游戏进程。
 
-安装 / 卸载采用同卷暂存、逐文件原子替换和写前持久日志。普通异常自动回滚；重启后如存在日志，先使用“恢复中断事务”。恢复会核验原 / 新目标哈希和备份。**这不是文件系统级的多文件原子事务，也不保证硬件突然断电时存储设备已落盘。** 不要在写入过程中运行游戏或手动改文件。Windows 命名互斥锁阻止并发安装器写入。拒绝符号链接、junction、reparse point、硬链接与不可信路径；这不是抵御同一账户主动并发篡改的安全沙箱。
+安装 / 卸载采用同卷暂存、逐文件原子替换与持久事务日志，普通异常尝试回滚；重启后有未完成日志时先用“恢复中断事务”。恢复前验证日志、目标和备份。它不是文件系统级多文件原子事务，也不保证断电时设备已落盘；操作中不要运行游戏或手动改目标文件。
 
-点击“卸载还原”先通过 Steam 界面安全恢复自动设置前的启动选项，再恢复 / 删除本安装器管理的两个文件。仅当前值精确等于备份的应用值时才写回原值；原值为空则清空。当前值已是原值时只确认，不重复写入。**用户修改过启动选项则拒绝覆盖并停止卸载**；自动定位 / 保存验证失败也停止卸载，保留文件和备份供重试。可单独点击“恢复 Steam 原启动选项”，不卸载游戏文件。没有自动记录的手动设置项不会被猜测或清空，须自行核对恢复。
+“卸载还原”先恢复有自动管理记录的 Steam 启动项，再恢复原有目标文件或删除本次新增文件。若文件已被外部修改，或 Steam 原值恢复未确认，会停止并保留备份供核对 / 重试；有记录时可能需再次授权同一 Steam 路线。可单独用“恢复 Steam 原启动选项”。**没有自动记录的手动启动项必须自行恢复，不会猜测或清空。**
 
-启动选项使用独立的严格 JSON 状态 `launch-options.json`（schema 1、固定 AppID、精确游戏路径、原值 / 应用值及各自 UTF-8 SHA256、pending / applied / restored 阶段）。写入前先持久保存 pending，启动选项恢复成功后保留 restored 记录，不删除原值证据。不可信 / 多余字段、重复键、哈希不符及链接会被拒绝。Steam UI 与游戏文件是两个系统，**不是跨系统原子事务**：Steam 恢复成功但后续文件卸载失败时，Steam 保持原值，文件事务独立恢复后可重试。不要提前删除 `.bb-cn-installer`。
+Steam 与游戏文件不是跨系统原子事务：Steam 已恢复而后续文件卸载失败时，文件事务需独立恢复后重试。恢复成功后也保留 Steam 原值证据；不要提前删除 `.bb-cn-installer`。
 
-第三方 MOD 兼容性**未验证**：本版只使用原版 `.dat`，不合并 `data/*.zip`。请先自行管理其他 MOD，不能声称任意 MOD 都兼容。
+默认持久缓存为 `%LOCALAPPDATA%\BB-CN-Installer`，须预留原版 `.dat` 副本和转换空间。完整 stdout / stderr 在 `prepared-*/translator.log`；日志含本机路径，分享前脱敏。隔离副本和生成的 `zdata_cn.zip` 含游戏内容，**不得上传、入库或再分发**。不再需要时可清理缓存，但不要把缓存与游戏内卸载备份混淆。
 
-## CLI（无需管理员权限）
+## 当前验证证据与边界
 
-无参数打开 GUI。`--diagnose` 是只读：
+本版附件 `BB-CN-Installer.exe`：20634140 字节，SHA256 `8263f30cdff51d387c94f8b009bc56556df2e00623be00dbb10e0fe7c54f2769`。以下证据仅对应这些字节，不继承旧候选的结果：
 
-```console
-python bb_cn_installer.py --help
-python bb_cn_installer.py --diagnose --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers"
-python bb_cn_installer.py prepare --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers" --launcher "D:\Downloads\bb-launcher-steam.exe" --cache-dir "D:\BB-CN-Cache"
-python bb_cn_installer.py install --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers" --launcher "D:\Downloads\bb-launcher-steam.exe" --prepared "D:\BB-CN-Cache\prepared-...\prepared.json" --accept-warnings --yes
-python bb_cn_installer.py check --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers"
-python bb_cn_installer.py steam-set --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers" --yes
-python bb_cn_installer.py steam-restore --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers" --yes
-python bb_cn_installer.py uninstall --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers" --yes
-python bb_cn_installer.py recover --game-dir "D:\SteamLibrary\steamapps\common\Battle Brothers" --yes
+- 构建前源码测试 184 项通过，无跳过。
+- `port-adaptation/gui-final/result.json`：完整默认 GUI 验收通过。隔离真实组件副本上警告摘要及全文核对、取消无写入、明确接受后安装、独立 healthy 校验、复制命令、GUI 卸载字节还原、正常退出 0。Steam 重启授权保持关闭。
+- `port-adaptation/frozen-steam/result.json`：10 个参数场景符合预期，包括授权 Steam 设置 / 恢复、新订阅读回及普通重启后持久化；临时调试监听关闭，保护树哈希不变。这不是属性页重开验证。
+- `port-adaptation/first-download.json`：空缓存从官方取得并校验转换器，使用内置文本，生成 ZIP 2359 条目及 CRC 通过。不是完全离线安装。
+- `frozen-steam/frozen-recovery-result.json`：源码注入隔离安装中断后，由同一冻结 EXE 恢复返回 0、目标字节还原。不是完整冻结内部故障注入矩阵。
+- `port-adaptation/game-final/result.json`：本次 EXE 安装的完整副本中文菜单、大地图、任务说明和旧存档 `0811` 加载通过，退出后真实游戏树恢复基线、全部原存档未变，Documents 仅日志更新；原 Steam 启动项恢复、临时调试监听关闭。
+- **Steam 原游戏入口与本次生成汉化包在同一次运行中的联合验证未完成，本次测试版选择跳过该补测。** 已分别观察 Steam AppID `365360` 启动链与副本中文运行，但 Steam 的 `%command%` 会指向登记的真实游戏，不能合称同链通过。实际成就触发未验证，不保证。
+
+原始证据含本机路径或受限游戏内容，仅保留在本机，不直接公开。参数入口是内部验收工具，不另发 CLI / onedir 包。使用说明及已知限制见[预发布说明](RELEASE-NOTES-v0.2.0-beta.1.md)。
+
+## 从源码运行、测试与单文件构建
+
+源码运行需带 tkinter 的 Windows Python；已验证构建环境使用 Python 3.14。运行期仅用标准库；Steam 桥另调用 Windows PowerShell / .NET。以下命令在仓库根目录的 **Windows PowerShell** 执行，使用独立 venv，不依赖某个开发者机器的路径：
+
+```powershell
+python -m venv .venv
+.\.venv\Scripts\python.exe -m pip install -r requirements-build.txt
+$env:BBCN_TEST_SCRATCH = Join-Path $PWD '.test-scratch'
+.\.venv\Scripts\python.exe -m unittest discover -s tests -v
+.\.venv\Scripts\python.exe bb_cn_installer.py
 ```
 
-只有读完警告后才传 `--accept-warnings`；未知既有文件另须 `--replace`。返回码 0 表示命令通过，2 表示拒绝 / 不健康 / 失败。CLI 输出 JSON。无需修改环境变量绕过版本；生产 CLI 不提供版本或哈希校验关闭开关。
+构建必须使用固定 [`requirements-build.txt`](requirements-build.txt)（PyInstaller `6.22.3`）。明确指定固定文本归档的本机输入 / 下载缓存位置：已有文件必须匹配 `dependencies.json`，缺少时构建脚本从固定官方地址下载。
 
-可将已下载的官方 ZIP 放入指定缓存，程序仍会校验：
-
-- `bb-translator-windows.zip`
-- `translation-source.zip`
-
-固定 URL、版本和 SHA256 全部在 `dependencies.json`；HTTP 失败可尝试官方 GitHub release asset API，哈希不符则停机。GitHub 重新打包同提交 archive 如改变字节，也会拒绝而不是静默接受。
-
-## 测试与构建
-
-运行期无 PyPI 依赖；Steam UI 桥使用系统 Windows PowerShell 5.1 / .NET UIAutomation，固定脚本通过 `-EncodedCommand` 运行，选项仅通过 UTF-8 JSON stdin 传入，不进行 shell 字符串拼接，也不收集凭据。Windows 测试仅使用临时假游戏和测试注入，不接触真实游戏或 Steam 配置；测试含真实复制 / 安装 / 检查 / 卸载 / 故障回滚 / 模拟中断恢复、junction / 硬链接拒绝、恶意状态 / ZIP、VDF、多库、Windows 版本 API、进程读取、Tk 构建和 CLI 子进程。Steam fake backend 覆盖非空 / 空原值、重复设置、用户修改、导航失败未写入、读回失败 / 回滚及严格 schema；PowerShell 自检只加载 .NET 和执行合成语义选择器测试，不打开 Steam。**这些测试不是实际 Steam 客户端自动化成功的证明。** 转换器行为测试使用注入子进程结果，不冒充真实游戏转换的证据。
-
-```console
-python -m unittest discover -s tests -v
+```powershell
+New-Item -ItemType Directory -Force build-inputs | Out-Null
+$env:BBCN_TEXT_SOURCE = Join-Path $PWD 'build-inputs\translation-source.zip'
+.\.venv\Scripts\python.exe build_onefile.py
 ```
 
-测试默认目录 `~/AppData/Local/hermes/cache/scratch`，可用 `BBCN_TEST_SCRATCH` 指定自有测试目录，绝不自动查找真实游戏。`tdd-test-log.txt` 为本次逐纵切 RED/GREEN 执行记录（仅本机用户目录已替换为 `<USER_HOME>`，含预期失败，不是最终失败）。
+`build_onefile.py` 先跑测试、收集 Python / Tcl / Tk / PyInstaller 许可，校验文本源并嵌入，输出 **`dist-onefile/BB-CN-Installer.exe`**。旧 `build.py` 的 GUI / CLI onedir 是历史内部工具，不是本版公开交付路径。不要将构建缓存、真实组件缓存、测试日志、隔离游戏副本或生成补丁混入源码 / 发布包；源码参数入口仅供开发诊断，先读 `--help`，涉及写入仍须显式授权。
 
-在独立 venv 安装 `requirements-build.txt` 后：
+## 许可与分发边界
 
-```console
-python build.py
-```
+安装器原创代码为 MIT，见 [`LICENSE`](LICENSE)；汉化文本保留 GPLv3。单 EXE 将完整未修改文本源 ZIP、GPLv3 全文及 `TRANSLATION-NOTICE.txt` 作为独立资源内置，并包含项目及运行库许可。第三方内容不改按 MIT 授权，详见 [`THIRD_PARTY_NOTICES.md`](THIRD_PARTY_NOTICES.md)。
 
-构建脚本先跑全套测试，再调用 PyInstaller 6.22.3，输出 `dist/BB-CN-Installer/BB-CN-Installer.exe`（GUI）与 `dist/BB-CN-Installer-CLI/BB-CN-Installer-CLI.exe`（控制台）。不自动安装依赖，不要求管理员权限，不收集任何游戏 / 启动器 / 缓存。打包为 onedir，避免单文件自解压到系统临时目录；分发须包含整个对应输出目录。
-
-本仓库测试和 GUI 构建不能证明真实游戏中文显示、旧存档加载或成就实际触发。发布验证应另外记录真实隔离转换、游戏 UI 和 Steam 集成观察；不能使用成就解锁器验证。
-
-## 许可
-
-本安装器自有代码为 MIT，见 `LICENSE`。第三方翻译、转换器、启动器、字体及游戏内容不受本项目 MIT 覆盖，见 `THIRD_PARTY_NOTICES.md`。本仓库 / 发布包不含官方启动器、转换器、翻译档案、游戏 .dat 或生成的 `zdata_cn.zip`。
+不随包发布转换器 / 作者启动器二进制、游戏原始文件、存档或生成游戏脚本。上游源码许可证不自动解决其另行发布二进制包中所有依赖 / 字体的再分发条件；本版采用官方获取 / 用户导入，不声称已确认这些完整二进制包的再分发许可。项目与 Overhype Studios、Valve / Steam、汉化作者无隶属关系。

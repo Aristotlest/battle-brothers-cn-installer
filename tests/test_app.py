@@ -12,6 +12,13 @@ from test_core import SCRATCH
 ROOT = Path(__file__).resolve().parents[1]
 
 class AppTests(unittest.TestCase):
+    def setUp(self):
+        app = importlib.import_module('bb_cn_installer')
+        detector = patch.object(app, 'detect_paths', return_value={
+            'games': [], 'game': None, 'launchers': [], 'launcher': None, 'note': '测试：未发现路径'})
+        detector.start()
+        self.addCleanup(detector.stop)
+
     def test_cli_help_and_diagnose_never_create_game_directory(self):
         app = ROOT / 'bb_cn_installer.py'
         self.assertTrue(app.is_file(), 'CLI/GUI entry point missing')
@@ -33,13 +40,17 @@ class AppTests(unittest.TestCase):
         root.withdraw()
         self.addCleanup(root.destroy)
         ui = app.Application(root)
+        self.addCleanup(lambda: root.after_cancel(ui.poll_id))
+        root.after_cancel(ui.detect_id)
         root.update()
         self.assertIn('汉化', root.title())
-        self.assertEqual(set(ui.actions), {'discover', 'prepare', 'install', 'check', 'uninstall', 'recover', 'steam', 'steam_restore'})
+        self.assertEqual(set(ui.actions), {'install_all', 'discover', 'prepare', 'install', 'check', 'uninstall', 'recover', 'steam', 'steam_restore'})
         self.assertIsNone(ui.prepared)
         self.assertFalse(ui.busy)
         self.assertIn('手动粘贴', ui.instructions.cget('text'))
         self.assertIn('自动设置', ui.actions['steam'].cget('text'))
+        self.assertTrue(hasattr(ui, 'restart_steam'), 'Missing explicit temporary Steam restart consent')
+        self.assertFalse(ui.restart_steam.get())
         self.assertIn('恢复', ui.actions['steam_restore'].cget('text'))
 
     def test_gui_steam_confirmation_cancel_does_not_open_or_write_steam(self):
@@ -48,6 +59,7 @@ class AppTests(unittest.TestCase):
         root.withdraw()
         self.addCleanup(root.destroy)
         ui = app.Application(root)
+        root.after_cancel(ui.detect_id)
         self.addCleanup(lambda: root.after_cancel(ui.poll_id))
         from unittest.mock import Mock
         engine = Mock()
@@ -75,6 +87,34 @@ class AppTests(unittest.TestCase):
                 self.assertEqual(app.main([action, '--game-dir', 'C:/fake/Battle Brothers', '--yes']), 0)
                 getattr(engine, method).assert_called_once_with()
 
+    def test_gui_restart_checkbox_is_passed_to_selected_operation(self):
+        app = importlib.import_module('bb_cn_installer')
+        from unittest.mock import Mock
+        root = tk.Tk()
+        root.withdraw()
+        self.addCleanup(root.destroy)
+        ui = app.Application(root)
+        root.after_cancel(ui.detect_id)
+        self.addCleanup(lambda: root.after_cancel(ui.poll_id))
+        ui.restart_steam.set(True)
+        engine = Mock()
+        engine.game = Path('C:/fake/Battle Brothers')
+        engine.store = engine.game / '.bb-cn-installer'
+        engine.check.return_value = {'healthy': True}
+        engine.set_steam_options.return_value = {'status': 'applied', 'note': 'legacy'}
+        engine.restore_steam_options.return_value = {'status': 'restored', 'note': 'legacy'}
+        engine.uninstall.return_value = {'note': 'legacy'}
+        def immediate(label, task, done=None):
+            return task()
+        with patch.object(ui, 'engine', return_value=engine), patch.object(ui, 'start', side_effect=immediate), patch.object(app.messagebox, 'askyesno', return_value=True), patch.object(app, 'steam_operation', return_value={'status':'applied','note':'verified'}) as operation:
+            ui.steam()
+            ui.steam_restore()
+            ui.uninstall()
+        self.assertEqual(operation.call_args_list, [
+            unittest.mock.call(engine, 'set', restart=True),
+            unittest.mock.call(engine, 'restore', restart=True),
+            unittest.mock.call(engine, 'uninstall', restart=True)])
+
     def test_gui_background_worker_returns_to_main_thread_without_blocking(self):
         app = importlib.import_module('bb_cn_installer')
         import threading
@@ -83,6 +123,7 @@ class AppTests(unittest.TestCase):
         root.withdraw()
         self.addCleanup(root.destroy)
         ui = app.Application(root)
+        root.after_cancel(ui.detect_id)
         self.addCleanup(lambda: root.after_cancel(ui.poll_id))
         release = threading.Event()
         done = []

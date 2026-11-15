@@ -1,6 +1,6 @@
 # Third-party notices
 
-The MIT license in this repository covers only the installer authors' original code. It does not grant any rights to Battle Brothers, Steam, third-party translation texts, launchers, translators, fonts, or generated game scripts. No game files, launcher executable, translator executable, text source archive, or generated localization ZIP are bundled or redistributed by this project.
+The MIT license in this repository covers only the installer authors' original code. It does not grant any rights to Battle Brothers, Steam, third-party translation texts, launchers, translators, fonts, or generated game scripts. The new single-EXE build embeds only the pinned, unmodified GPLv3 translation source archive as separate data, with its complete source and license. No game files, launcher executable, translator executable, or generated localization ZIP are bundled by that build. Legacy v0.1.1 packages contain no translation archive.
 
 ## Translation texts
 
@@ -9,7 +9,7 @@ The MIT license in this repository covers only the installer authors' original c
 - Pinned revision: `b72af34749a31aee59139ba4e2455f65f924a5a7`.
 - Upstream license: GNU GPL v3 (the pinned archive includes `LICENSE`).
 - Source/license: https://github.com/shabbywu/Battle-Brothers-CN/blob/b72af34749a31aee59139ba4e2455f65f924a5a7/LICENSE
-- Downloaded directly from upstream into the user's cache; not relicensed as MIT.
+- Single-EXE builds include the exact unmodified source ZIP, its complete GPLv3 LICENSE and TRANSLATION-NOTICE.txt under `resources/`. The archive itself supplies the corresponding preferred source; it is not relicensed as MIT. Source checkouts without a bundled archive fetch the same pinned upstream resource. No generated game scripts are embedded.
 
 ## bb-translator
 
