@@ -222,6 +222,58 @@ def fetch_pinned(pin, target):
             part.unlink(missing_ok=True)
     raise SafetyError('官方依赖下载失败；可将已校验官方 ZIP 放入缓存。' + '; '.join(errors))
 
+def verify_obituary_package(package):
+    """An old preparation manifest is not evidence that this fix is present."""
+    from obituary_patch import patch_player
+    no_links(package)
+    audit_zip(package)
+    with zipfile.ZipFile(package) as archive:
+        try:
+            original = archive.read('scripts/entity/tactical/player.cnut')
+            repaired, _ = patch_player(original)
+        except (KeyError, ValueError) as exc:
+            raise SafetyError('准备包未通过阵亡记录校验，请重新准备') from exc
+        if repaired != original:
+            raise SafetyError('旧准备包尚未修复阵亡记录，请重新准备')
+
+
+def repair_obituary_package(package):
+    """Repair the generated copy only; replace no other ZIP member."""
+    from obituary_patch import patch_player
+    from copy import copy
+    package = Path(package)
+    no_links(package)
+    audit_zip(package)
+    member = 'scripts/entity/tactical/player.cnut'
+    temp = package.with_name(package.name + '.repair-' + uuid.uuid4().hex)
+    try:
+        with zipfile.ZipFile(package) as source:
+            if member not in source.namelist():
+                raise SafetyError('生成包缺少 player.cnut，无法验证阵亡记录修复')
+            try:
+                repaired, report = patch_player(source.read(member))
+            except ValueError as exc:
+                raise SafetyError('阵亡记录字节码不受支持，已停止准备: ' + str(exc)) from exc
+            with zipfile.ZipFile(temp, 'w') as target:
+                target.comment = source.comment
+                for info in source.infolist():
+                    target.writestr(copy(info), repaired if info.filename == member else source.read(info))
+            audit_zip(temp)
+            with zipfile.ZipFile(temp) as check:
+                if check.namelist() != source.namelist():
+                    raise SafetyError('修复后 ZIP 条目不一致')
+                for info in source.infolist():
+                    expected = repaired if info.filename == member else source.read(info)
+                    if check.read(info.filename) != expected:
+                        raise SafetyError('修复后 ZIP 内容校验失败')
+        with open(temp, 'r+b') as stream:
+            os.fsync(stream.fileno())
+        os.replace(temp, package)
+        return report
+    finally:
+        temp.unlink(missing_ok=True)
+
+
 def prepare(engine, launcher, cache, runner=subprocess.run):
     launch_option(engine.game)  # Reject unrepresentable commands before any cache writes.
     engine.validate()
@@ -260,13 +312,16 @@ def prepare(engine, launcher, cache, runner=subprocess.run):
     if result.returncode != 0: raise SafetyError('转换器失败；请查看 ' + str(work / 'translator.log'))
     package = stage / 'data/zdata_cn.zip'
     audit_zip(package)
+    repair_report = repair_obituary_package(package)
+    atomic_json(work / 'obituary-repair.json', repair_report)
     output = work / 'zdata_cn.zip'
     durable_copy(package, output)
-    warnings = ['第三方 MOD 兼容性未验证；仅从原版 .dat 生成，不合并 MOD。']
+    warnings = ['第三方 MOD 兼容性未验证；仅从原版 .dat 生成，不合并 MOD。',
+                '阵亡记录修复已校验: getObituaryInfo 拼接顺序。上游 onDeath 失败日志原样保留，详见 obituary-repair.json。']
     if log.strip().replace('--- STDERR ---', '').strip():
         warnings.extend(line for line in log.splitlines() if line.strip() and line != '--- STDERR ---')
     if re.search(r'player|onDeath|modify failed', log, re.I):
-        warnings.insert(0, '重要：检测到转换器补丁警告（已知 player / onDeath 修改失败）。不能保证该功能汉化完整。')
+        warnings.insert(0, '上游 player / onDeath 补丁未适配当前游戏；安装器已独立校验并修复 getObituaryInfo，原始输出保留在下方。')
     prepared = Prepared(output, sha256(output), warnings)
     atomic_json(work / 'prepared.json', {'sha256': prepared.digest, 'warnings': warnings})
     return prepared

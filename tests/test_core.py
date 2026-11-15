@@ -242,8 +242,11 @@ class CoreTests(unittest.TestCase):
             with zipfile.ZipFile(stage / 'data/zdata_cn.zip', 'w') as z: z.writestr('scripts/test.nut', 'Chinese fixture')
             import subprocess
             return subprocess.CompletedProcess(cmd, 0, b'', b'modify failed: player onDeath\n')
-        with patch.dict(self.c.PINS['translator'], {'sha256': self.c.sha256(tz)}), patch.dict(self.c.PINS['texts'], {'sha256': self.c.sha256(texts)}):
+        with patch.dict(self.c.PINS['translator'], {'sha256': self.c.sha256(tz)}), patch.dict(self.c.PINS['texts'], {'sha256': self.c.sha256(texts)}), patch.object(self.c, 'repair_obituary_package', return_value={'status': 'patched', 'function': 'getObituaryInfo', 'changed_instructions': 1}) as repair:
             result = prepare(self.engine, self.launcher, cache, runner=translator)
+        repair.assert_called_once()
+        self.assertEqual(json.loads((result.path.parent / 'obituary-repair.json').read_text(encoding='utf-8'))['function'], 'getObituaryInfo')
+        self.assertIn('阵亡记录修复已校验', '\n'.join(result.warnings))
         self.assertTrue(result.path.is_file())
         self.assertEqual(result.digest, self.c.sha256(result.path))
         self.assertIn('player onDeath', '\n'.join(result.warnings))

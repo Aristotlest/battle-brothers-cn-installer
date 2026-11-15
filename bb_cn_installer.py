@@ -48,6 +48,8 @@ def load_prepared(path):
         raise SafetyError('准备清单无效')
     package = path.parent / 'zdata_cn.zip'
     if sha256(package) != value['sha256']: raise SafetyError('准备清单与 ZIP 不匹配')
+    from installer_core import verify_obituary_package
+    verify_obituary_package(package)
     return Prepared(package, value['sha256'], value['warnings'])
 
 
@@ -66,9 +68,14 @@ def conversion_warning_summary(warnings):
             grouped += 1
         else:
             retained.append(warning)
-    headline = ('重要：player / onDeath 补丁兼容性存在不确定性；不能保证该功能汉化完整。\n'
-                '转换器若报告兼容处理失败，可能无法正常展示被击杀的历史；请核对下方实际输出。\n'
-                '第三方 MOD 兼容性未验证；不合并 MOD。\n\n')
+    if any(w == '阵亡记录修复已校验: getObituaryInfo 拼接顺序。上游 onDeath 失败日志原样保留，详见 obituary-repair.json。' for w in warnings):
+        headline = ('阵亡记录修复已校验: 安装器已修正 getObituaryInfo 的中文拼接顺序。\n'
+                    '上游 player / onDeath 失败输出原样保留，不代表后处理未执行；修复详情见 obituary-repair.json。\n'
+                    '第三方 MOD 兼容性未验证；不合并 MOD。\n\n')
+    else:
+        headline = ('重要：player / onDeath 补丁兼容性存在不确定性；不能保证该功能汉化完整。\n'
+                    '转换器若报告兼容处理失败，可能无法正常展示被击杀的历史；请核对下方实际输出。\n'
+                    '第三方 MOD 兼容性未验证；不合并 MOD。\n\n')
     return (headline + f'原始输出共 {len(warnings)} 条；已分组的已知进度 / 耗时行 {grouped} 条。\n'
             f'其余 {len(retained)} 条逐条保留（未判定为无害）：\n'
             + '\n'.join(retained)
@@ -702,6 +709,7 @@ def main(argv=None):
         else:
             if not args.yes: raise SafetyError('写入操作需要显式 --yes')
             if action == 'install':
+                launch_option(engine.game)
                 if not args.launcher or not args.prepared: raise SafetyError('install 需要 --launcher 和 --prepared')
                 engine.install(load_prepared(args.prepared), args.launcher, replace=args.replace, accept_warnings=args.accept_warnings)
                 result = engine.check()

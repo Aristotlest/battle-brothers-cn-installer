@@ -110,7 +110,8 @@ class PathDiscoveryTests(unittest.TestCase):
             return subprocess.CompletedProcess(command, 0, b'', b'')
         engine = core.Engine(result['game'], platform=self.platform)
         with patch.dict(core.PINS['translator'], {'sha256': core.sha256(translator)}), \
-                patch.dict(core.PINS['texts'], {'sha256': core.sha256(texts)}):
+                patch.dict(core.PINS['texts'], {'sha256': core.sha256(texts)}), \
+                patch.object(core, 'repair_obituary_package', return_value={'status': 'patched', 'function': 'getObituaryInfo', 'changed_instructions': 1}):
             prepared = core.prepare(engine, result['launcher'], cache, runner=convert)
         # A pinned installed file is not ownership or replacement permission.
         with self.assertRaises(core.SafetyError):

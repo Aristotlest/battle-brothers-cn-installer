@@ -4,6 +4,15 @@ import bb_cn_installer as app
 
 
 class WarningSummaryTests(unittest.TestCase):
+    def test_verified_repair_is_distinguished_from_preserved_upstream_failure(self):
+        notice = '阵亡记录修复已校验: getObituaryInfo 拼接顺序。上游 onDeath 失败日志原样保留，详见 obituary-repair.json。'
+        raw = '[*] 兼容处理失败, 将无法正常展示被击杀的历史'
+        summary = app.conversion_warning_summary([notice, raw])
+        self.assertTrue(summary.startswith('阵亡记录修复已校验'))
+        self.assertNotIn('补丁兼容性存在不确定性', summary)
+        self.assertIn(raw, summary)
+        self.assertIn('第三方 MOD', summary)
+
     def test_only_exact_observed_progress_forms_are_grouped_unknown_lines_stay(self):
         warnings = [
             '正在翻译 scripts/entity/tactical/player.cnut',
